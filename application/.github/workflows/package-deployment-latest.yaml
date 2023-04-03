@@ -1,0 +1,34 @@
+name: Package Deployment Latest
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  package-deployment:
+    name: Build and upload package ready for AWS Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@master
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Print current SHA
+        run: |
+          echo "SHA: latest"
+
+      - name: Create package
+        run: |
+          sed -i "s/\${VERSION_SHA}/${{ github.sha }}/g" index.js
+          zip -r latest.zip index.js
+
+      - name: Upload package
+        run: |
+          aws s3 cp ./latest.zip s3://spacelift-demo-preview-environments-service/
